@@ -16,7 +16,41 @@
 
 package org.drools.guvnor.server.jaxrs;
 
-import com.google.gwt.user.client.rpc.SerializationException;
+import static org.drools.guvnor.server.jaxrs.Translator.toAsset;
+import static org.drools.guvnor.server.jaxrs.Translator.toAssetEntryAbdera;
+import static org.drools.guvnor.server.jaxrs.Translator.toPackage;
+import static org.drools.guvnor.server.jaxrs.Translator.toPackageEntryAbdera;
+
+import java.io.InputStream;
+import java.net.URI;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
 import org.apache.abdera.Abdera;
 import org.apache.abdera.factory.Factory;
 import org.apache.abdera.model.Element;
@@ -37,20 +71,7 @@ import org.drools.repository.PackageItem;
 import org.drools.repository.PackageIterator;
 import org.jboss.seam.annotations.Name;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
-
-import java.io.InputStream;
-import java.net.URLDecoder;
-import java.net.URI;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
-import static org.drools.guvnor.server.jaxrs.Translator.*;
+import com.google.gwt.user.client.rpc.SerializationException;
 
 /**
  * Contract:  Package names and asset names within a package namespace
@@ -203,7 +224,8 @@ public class PackageResource extends Resource {
             PackageItem packageItem = repository.loadPackage(packageName);
             PackageDRLAssembler asm = new PackageDRLAssembler(packageItem);
             String drl = asm.getDRL();
-            return Response.ok(drl).header("Content-Disposition", "attachment; filename=" + packageName).build();
+            return Response.ok(drl).header("Content-Disposition", "attachment; filename=" + packageName).
+                    header("Last-Modified", createDateFormat().format(this.convertToGmt(packageItem.getLastModified()).getTime())).build();
         } catch (Exception e) {
             //catch RulesRepositoryException and other exceptions. For example when the package does not exists.
             throw new WebApplicationException(e);
@@ -232,7 +254,8 @@ public class PackageResource extends Resource {
                 }
                 result = repository.loadPackage(packageName).getCompiledPackageBytes();
             }
-            return Response.ok(result).header("Content-Disposition", "attachment; filename=" + fileName).build();
+            return Response.ok(result).header("Content-Disposition", "attachment; filename=" + fileName).
+                    header("Last-Modified", createDateFormat().format(this.convertToGmt(p.getLastModified()).getTime())).build();
         } catch (Exception e) {
             //catch RulesRepositoryException and other exceptions. For example when the package does not exists.
             throw new WebApplicationException(e);
@@ -292,7 +315,8 @@ public class PackageResource extends Resource {
         PackageItem item = repository.loadPackage(packageName, versionNumber);
         PackageDRLAssembler asm = new PackageDRLAssembler(item);
         String drl = asm.getDRL();
-        return Response.ok(drl).header("Content-Disposition", "attachment; filename=" + packageName).build();
+        return Response.ok(drl).header("Content-Disposition", "attachment; filename=" + packageName).
+                    header("Last-Modified", createDateFormat().format(this.convertToGmt(item.getLastModified()).getTime())).build();
     }
 
     @GET
@@ -304,7 +328,8 @@ public class PackageResource extends Resource {
         byte[] result = p.getCompiledPackageBytes();
         if (result != null) {
             String fileName = packageName + ".pkg";
-            return Response.ok(result).header("Content-Disposition", "attachment; filename=" + fileName).build();
+            return Response.ok(result).header("Content-Disposition", "attachment; filename=" + fileName).
+                    header("Last-Modified", createDateFormat().format(this.convertToGmt(p.getLastModified()).getTime())).build();
         } else {
             return Response.status(500).entity("This package version has no compiled binary").type("text/plain").build();
         }
@@ -793,6 +818,29 @@ public class PackageResource extends Resource {
         }
 
         return null;
+    }
+    
+    private DateFormat createDateFormat(){
+        return new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.US);
+    }
+    
+    private Calendar convertToGmt(Calendar cal) {
+
+        Date date = cal.getTime();
+        TimeZone tz = cal.getTimeZone();
+
+        //Returns the number of milliseconds since January 1, 1970, 00:00:00 GMT 
+        long msFromEpochGmt = date.getTime();
+
+        //gives you the current offset in ms from GMT at the current date
+        int offsetFromUTC = tz.getOffset(msFromEpochGmt);
+
+        //create a new calendar in GMT timezone, set to this date and add the offset
+        Calendar gmtCal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+        gmtCal.setTime(date);
+        gmtCal.add(Calendar.MILLISECOND, offsetFromUTC);
+
+        return gmtCal;
     }
 }
 

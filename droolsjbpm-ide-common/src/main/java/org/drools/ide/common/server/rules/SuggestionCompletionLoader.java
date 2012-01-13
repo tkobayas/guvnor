@@ -764,8 +764,8 @@ public class SuggestionCompletionLoader
                 fieldType = SuggestionCompletionEngine.TYPE_BOOLEAN;
             } else if ( Date.class.isAssignableFrom( type ) ) {
                 fieldType = SuggestionCompletionEngine.TYPE_DATE; // MN: wait until we support it.
-            } else if ( Comparable.class.isAssignableFrom( type ) ) {
-                fieldType = SuggestionCompletionEngine.TYPE_COMPARABLE;
+//            } else if ( Comparable.class.isAssignableFrom( type ) ) {
+//                fieldType = SuggestionCompletionEngine.TYPE_COMPARABLE;
             } else {
                 try {
                     Class clazz = resolver.resolveType( type.getName() );

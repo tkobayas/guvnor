@@ -59,6 +59,12 @@ public class RuleModel
                 if ( p.getBoundName() != null ) {
                     list.add( p.getBoundName() );
                 }
+            } else if ( this.lhs[i] instanceof FromCompositeFactPattern ) {
+            	final FromCompositeFactPattern ffp = (FromCompositeFactPattern) this.lhs[i];
+            	final FactPattern p = ffp.factPattern;
+                if ( p.getBoundName() != null ) {
+                    list.add( p.getBoundName() );
+                }
             }
         }
         return list;
@@ -251,6 +257,9 @@ public class RuleModel
         List<String> result = new ArrayList<String>();
         for ( int i = 0; i < this.lhs.length; i++ ) {
             IPattern pat = this.lhs[i];
+            if ( pat instanceof FromCompositeFactPattern) {
+            	pat = ((FromCompositeFactPattern) pat).factPattern;
+            }
             if ( pat instanceof FactPattern ) {
                 FactPattern fact = (FactPattern) pat;
                 if ( fact.isBound() ) {

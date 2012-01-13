@@ -91,7 +91,7 @@ public class FromCompositeFactPatternWidget extends RuleModellerWidget {
             //this.layout.setWidget( 0, 0, factPatternWidget );
             return factPatternWidget;
         } else {
-            factPatternWidget = new FactPatternWidget(this.getModeller(), fact, true, false);
+            factPatternWidget = new FactPatternWidget(this.getModeller(), fact, true, true);
             factPatternWidget.addOnModifiedCommand(new Command() {
                 public void execute() {
                     setModified(true);
